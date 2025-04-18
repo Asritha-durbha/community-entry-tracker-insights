@@ -9,6 +9,7 @@ import { VisitorEntry, NewVisitorEntry } from "@/types/visitor";
 
 const Index = () => {
   const [entries, setEntries] = useState<VisitorEntry[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -16,45 +17,75 @@ const Index = () => {
   }, []);
 
   const fetchEntries = async () => {
-    const { data, error } = await supabase
-      .from('visitor_entries')
-      .select('*')
-      .order('time_in', { ascending: false });
+    setLoading(true);
+    try {
+      console.log("Fetching entries from Supabase...");
+      const { data, error } = await supabase
+        .from('visitor_entries')
+        .select('*')
+        .order('time_in', { ascending: false });
 
-    if (error) {
+      console.log("Supabase response:", { data, error });
+
+      if (error) {
+        console.error("Supabase fetch error:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch visitor entries: " + error.message,
+          variant: "destructive",
+        });
+      } else {
+        console.log("Successfully fetched entries:", data);
+        setEntries(data || []);
+      }
+    } catch (err) {
+      console.error("Unexpected error during fetch:", err);
       toast({
         title: "Error",
-        description: "Failed to fetch visitor entries",
+        description: "An unexpected error occurred",
         variant: "destructive",
       });
-    } else {
-      setEntries(data || []);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleSubmit = async (newEntry: NewVisitorEntry) => {
-    const timeIn = new Date().toISOString();
+    try {
+      console.log("Adding new entry:", newEntry);
+      const timeIn = new Date().toISOString();
 
-    const { error } = await supabase
-      .from('visitor_entries')
-      .insert({
-        ...newEntry,
-        time_in: timeIn,
-      })
-      .select();
+      const { data, error } = await supabase
+        .from('visitor_entries')
+        .insert({
+          ...newEntry,
+          time_in: timeIn,
+        })
+        .select();
 
-    if (error) {
+      console.log("Supabase insert response:", { data, error });
+
+      if (error) {
+        console.error("Supabase insert error:", error);
+        toast({
+          title: "Error",
+          description: "Failed to add visitor entry: " + error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Visitor entry added successfully",
+        });
+        fetchEntries();
+      }
+    } catch (err) {
+      console.error("Unexpected error during insert:", err);
       toast({
         title: "Error",
-        description: "Failed to add visitor entry",
+        description: "An unexpected error occurred while adding entry",
         variant: "destructive",
       });
-    } else {
-      toast({
-        title: "Success",
-        description: "Visitor entry added successfully",
-      });
-      fetchEntries();
     }
   };
 
@@ -64,9 +95,17 @@ const Index = () => {
         <h1 className="text-3xl font-bold text-gray-900 mb-8">
           Community Entry Tracker
         </h1>
-        <InsightsSection />
-        <EntryForm onSubmit={handleSubmit} />
-        <EntriesTable entries={entries} />
+        {loading ? (
+          <div className="flex justify-center p-8">
+            <p>Loading...</p>
+          </div>
+        ) : (
+          <>
+            <InsightsSection />
+            <EntryForm onSubmit={handleSubmit} />
+            <EntriesTable entries={entries} />
+          </>
+        )}
       </div>
     </div>
   );

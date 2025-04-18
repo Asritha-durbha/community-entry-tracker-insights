@@ -15,6 +15,15 @@ interface EntriesTableProps {
 }
 
 export const EntriesTable = ({ entries }: EntriesTableProps) => {
+  // Add a safety check for entries
+  if (!entries || entries.length === 0) {
+    return (
+      <Card className="overflow-hidden p-6">
+        <p className="text-center text-gray-500">No entries found</p>
+      </Card>
+    );
+  }
+
   return (
     <Card className="overflow-hidden">
       <Table>
@@ -36,7 +45,7 @@ export const EntriesTable = ({ entries }: EntriesTableProps) => {
               <TableCell>{entry.vehicle_number}</TableCell>
               <TableCell>{entry.purpose}</TableCell>
               <TableCell>
-                {new Date(entry.time_in).toLocaleString()}
+                {entry.time_in ? new Date(entry.time_in).toLocaleString() : ''}
               </TableCell>
               <TableCell>
                 {entry.time_out
