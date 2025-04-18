@@ -15,6 +15,8 @@ interface EntriesTableProps {
 }
 
 export const EntriesTable = ({ entries }: EntriesTableProps) => {
+  console.log("EntriesTable rendering with entries:", entries);
+
   // Add a safety check for entries
   if (!entries || entries.length === 0) {
     return (

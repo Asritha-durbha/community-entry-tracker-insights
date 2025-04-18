@@ -10,22 +10,33 @@ interface EntryFormProps {
 }
 
 export const EntryForm = ({ onSubmit }: EntryFormProps) => {
+  console.log("Rendering EntryForm");
+  
   const [newEntry, setNewEntry] = useState<NewVisitorEntry>({
     visitor_name: "",
     vehicle_type: "",
     vehicle_number: "",
     purpose: "",
   });
+  
+  const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onSubmit(newEntry);
-    setNewEntry({
-      visitor_name: "",
-      vehicle_type: "",
-      vehicle_number: "",
-      purpose: "",
-    });
+    setSubmitting(true);
+    try {
+      await onSubmit(newEntry);
+      setNewEntry({
+        visitor_name: "",
+        vehicle_type: "",
+        vehicle_number: "",
+        purpose: "",
+      });
+    } catch (error) {
+      console.error("Error submitting form:", error);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -38,6 +49,7 @@ export const EntryForm = ({ onSubmit }: EntryFormProps) => {
           onChange={(e) =>
             setNewEntry({ ...newEntry, visitor_name: e.target.value })
           }
+          required
         />
         <Input
           placeholder="Vehicle Type"
@@ -45,6 +57,7 @@ export const EntryForm = ({ onSubmit }: EntryFormProps) => {
           onChange={(e) =>
             setNewEntry({ ...newEntry, vehicle_type: e.target.value })
           }
+          required
         />
         <Input
           placeholder="Vehicle Number"
@@ -52,6 +65,7 @@ export const EntryForm = ({ onSubmit }: EntryFormProps) => {
           onChange={(e) =>
             setNewEntry({ ...newEntry, vehicle_number: e.target.value })
           }
+          required
         />
         <Input
           placeholder="Purpose"
@@ -59,9 +73,14 @@ export const EntryForm = ({ onSubmit }: EntryFormProps) => {
           onChange={(e) =>
             setNewEntry({ ...newEntry, purpose: e.target.value })
           }
+          required
         />
-        <Button type="submit" className="md:col-span-2">
-          Add Entry
+        <Button 
+          type="submit" 
+          className="md:col-span-2"
+          disabled={submitting}
+        >
+          {submitting ? "Adding..." : "Add Entry"}
         </Button>
       </form>
     </Card>

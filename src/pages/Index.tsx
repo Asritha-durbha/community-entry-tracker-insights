@@ -10,14 +10,17 @@ import { VisitorEntry, NewVisitorEntry } from "@/types/visitor";
 const Index = () => {
   const [entries, setEntries] = useState<VisitorEntry[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
+    console.log("Index component mounted");
     fetchEntries();
   }, []);
 
   const fetchEntries = async () => {
     setLoading(true);
+    setError(null);
     try {
       console.log("Fetching entries from Supabase...");
       const { data, error } = await supabase
@@ -29,6 +32,7 @@ const Index = () => {
 
       if (error) {
         console.error("Supabase fetch error:", error);
+        setError(`Failed to fetch entries: ${error.message}`);
         toast({
           title: "Error",
           description: "Failed to fetch visitor entries: " + error.message,
@@ -40,6 +44,7 @@ const Index = () => {
       }
     } catch (err) {
       console.error("Unexpected error during fetch:", err);
+      setError("An unexpected error occurred");
       toast({
         title: "Error",
         description: "An unexpected error occurred",
@@ -95,9 +100,22 @@ const Index = () => {
         <h1 className="text-3xl font-bold text-gray-900 mb-8">
           Community Entry Tracker
         </h1>
+        
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            <p>{error}</p>
+            <button 
+              onClick={fetchEntries} 
+              className="mt-2 text-sm underline"
+            >
+              Try again
+            </button>
+          </div>
+        )}
+        
         {loading ? (
           <div className="flex justify-center p-8">
-            <p>Loading...</p>
+            <p>Loading entries...</p>
           </div>
         ) : (
           <>
