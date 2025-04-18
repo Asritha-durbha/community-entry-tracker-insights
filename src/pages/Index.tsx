@@ -1,5 +1,6 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
+import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -23,27 +24,15 @@ import {
   Cell,
 } from "recharts";
 
-// Mock data for demonstration
-const initialEntries = [
-  {
-    id: 1,
-    visitorName: "John Smith",
-    vehicleType: "Car",
-    vehicleNumber: "ABC 123",
-    purpose: "Delivery",
-    timeIn: "2024-04-15T09:30",
-    timeOut: "2024-04-15T10:00",
-  },
-  {
-    id: 2,
-    visitorName: "Sarah Johnson",
-    vehicleType: "Bike",
-    vehicleNumber: "XYZ 789",
-    purpose: "Visit",
-    timeIn: "2024-04-15T11:15",
-    timeOut: "2024-04-15T13:45",
-  },
-];
+interface VisitorEntry {
+  id: number;
+  visitor_name: string;
+  vehicle_type: string;
+  vehicle_number: string;
+  purpose: string;
+  time_in: string;
+  time_out: string | null;
+}
 
 const vehicleData = [
   { name: "Car", value: 45 },
@@ -55,32 +44,71 @@ const vehicleData = [
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 
 const Index = () => {
-  const [entries, setEntries] = useState(initialEntries);
+  const [entries, setEntries] = useState<VisitorEntry[]>([]);
   const [newEntry, setNewEntry] = useState({
-    visitorName: "",
-    vehicleType: "",
-    vehicleNumber: "",
+    visitor_name: "",
+    vehicle_type: "",
+    vehicle_number: "",
     purpose: "",
   });
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    fetchEntries();
+  }, []);
+
+  const fetchEntries = async () => {
+    const { data, error } = await supabase
+      .from('visitor_entries')
+      .select('*')
+      .order('time_in', { ascending: false });
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch visitor entries",
+        variant: "destructive",
+      });
+    } else {
+      setEntries(data || []);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const timeIn = new Date().toISOString();
-    setEntries([
-      ...entries,
-      {
-        id: entries.length + 1,
-        ...newEntry,
-        timeIn,
-        timeOut: "",
-      },
-    ]);
-    setNewEntry({
-      visitorName: "",
-      vehicleType: "",
-      vehicleNumber: "",
-      purpose: "",
-    });
+
+    const { data, error } = await supabase
+      .from('visitor_entries')
+      .insert({
+        visitor_name: newEntry.visitor_name,
+        vehicle_type: newEntry.vehicle_type,
+        vehicle_number: newEntry.vehicle_number,
+        purpose: newEntry.purpose,
+        time_in: timeIn,
+      })
+      .select();
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add visitor entry",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Visitor entry added successfully",
+      });
+      
+      setNewEntry({
+        visitor_name: "",
+        vehicle_type: "",
+        vehicle_number: "",
+        purpose: "",
+      });
+      fetchEntries();
+    }
   };
 
   return (
@@ -136,23 +164,23 @@ const Index = () => {
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
               placeholder="Visitor Name"
-              value={newEntry.visitorName}
+              value={newEntry.visitor_name}
               onChange={(e) =>
-                setNewEntry({ ...newEntry, visitorName: e.target.value })
+                setNewEntry({ ...newEntry, visitor_name: e.target.value })
               }
             />
             <Input
               placeholder="Vehicle Type"
-              value={newEntry.vehicleType}
+              value={newEntry.vehicle_type}
               onChange={(e) =>
-                setNewEntry({ ...newEntry, vehicleType: e.target.value })
+                setNewEntry({ ...newEntry, vehicle_type: e.target.value })
               }
             />
             <Input
               placeholder="Vehicle Number"
-              value={newEntry.vehicleNumber}
+              value={newEntry.vehicle_number}
               onChange={(e) =>
-                setNewEntry({ ...newEntry, vehicleNumber: e.target.value })
+                setNewEntry({ ...newEntry, vehicle_number: e.target.value })
               }
             />
             <Input
@@ -184,16 +212,16 @@ const Index = () => {
             <TableBody>
               {entries.map((entry) => (
                 <TableRow key={entry.id}>
-                  <TableCell>{entry.visitorName}</TableCell>
-                  <TableCell>{entry.vehicleType}</TableCell>
-                  <TableCell>{entry.vehicleNumber}</TableCell>
+                  <TableCell>{entry.visitor_name}</TableCell>
+                  <TableCell>{entry.vehicle_type}</TableCell>
+                  <TableCell>{entry.vehicle_number}</TableCell>
                   <TableCell>{entry.purpose}</TableCell>
                   <TableCell>
-                    {new Date(entry.timeIn).toLocaleString()}
+                    {new Date(entry.time_in).toLocaleString()}
                   </TableCell>
                   <TableCell>
-                    {entry.timeOut
-                      ? new Date(entry.timeOut).toLocaleString()
+                    {entry.time_out
+                      ? new Date(entry.time_out).toLocaleString()
                       : "Active"}
                   </TableCell>
                 </TableRow>
